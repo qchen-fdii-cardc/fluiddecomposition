@@ -1,4 +1,4 @@
-baseURL = 'https://localhost:1313'
+baseURL = 'https://www.windtunel.cn'
 languageCode = 'en-us'
 title = 'Decompositon-based Models for Fluid Dynamics'
 theme = "hugo-book"
@@ -21,4 +21,4 @@ theme = "hugo-book"
 [params]
   math = true
   [params.book]
-  
+
