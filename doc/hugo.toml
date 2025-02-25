@@ -20,5 +20,4 @@ theme = "hugo-book"
         inline = [['\(', '\)'], ['$', '$']]
 [params]
   math = true
-  [params.book]
 
