@@ -18,68 +18,106 @@ def read_velocity_field(filename):
         return data, nx, ny, n_snapshots
 
 
-def create_comparison_animation(orig_data, recon_data, nx, ny, n_snapshots, output_filename):
-    # Create figure with four subplots
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(12, 10))
+def read_complex_velocity_field(filename):
+    with open(filename, 'rb') as f:
+        # Read dimensions
+        nx = struct.unpack('i', f.read(4))[0]
+        ny = struct.unpack('i', f.read(4))[0]
+        n_snapshots = struct.unpack('i', f.read(4))[0]
+
+        # Calculate total size for real and imaginary parts
+        points_per_snapshot = 2 * nx * ny  # 2 for u and v components
+        total_elements = points_per_snapshot * n_snapshots
+
+        # Read data
+        data = np.frombuffer(f.read(), dtype=np.float64)
+
+        # Split into real and imaginary parts
+        real_part = data[:total_elements].reshape(
+            (points_per_snapshot, n_snapshots))
+        imag_part = data[total_elements:].reshape(
+            (points_per_snapshot, n_snapshots))
+
+        # Combine into complex data
+        complex_data = real_part + 1j * imag_part
+
+        return complex_data, nx, ny, n_snapshots
+
+
+def create_comparison_animation(pod_orig, pod_recon, dmd_orig, dmd_recon,
+                                nx, ny, n_snapshots, output_filename):
+    # Create figure with six subplots (2x3)
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
 
     # Create meshgrid for plotting
     x = np.linspace(0, 2*np.pi, nx)
     y = np.linspace(0, 2*np.pi, ny)
     X, Y = np.meshgrid(x, y)
 
-    # Initialize plots
-    # Original velocity fields
-    u_orig = ax1.pcolormesh(X, Y, np.zeros((ny, nx)),
-                            cmap='RdBu', shading='auto')
-    v_orig = ax2.pcolormesh(X, Y, np.zeros((ny, nx)),
-                            cmap='RdBu', shading='auto')
+    # Calculate global color limits for better comparison
+    # For U component
+    vmax_u = max(abs(pod_orig[:nx*ny, :].max()),
+                 abs(pod_orig[:nx*ny, :].min()),
+                 abs(pod_recon[:nx*ny, :].max()),
+                 abs(pod_recon[:nx*ny, :].min()),
+                 abs(dmd_recon[:nx*ny, :].real.max()),
+                 abs(dmd_recon[:nx*ny, :].real.min()))
 
-    # Reconstructed velocity fields
-    u_recon = ax3.pcolormesh(X, Y, np.zeros(
-        (ny, nx)), cmap='RdBu', shading='auto')
-    v_recon = ax4.pcolormesh(X, Y, np.zeros(
-        (ny, nx)), cmap='RdBu', shading='auto')
+    # For V component - use same scale as U for consistency
+    vmax_v = vmax_u  # Use same scale for both components
+
+    # Initialize plots with consistent colormap and scale
+    plots = []
+    for i in range(2):  # rows: u and v components
+        for j in range(3):  # columns: original, POD, DMD
+            plot = axes[i, j].pcolormesh(X, Y, np.zeros((ny, nx)),
+                                         cmap='RdBu_r', shading='auto')
+            plots.append(plot)
+            axes[i, j].set_aspect('equal')
+            axes[i, j].axis('off')
+            # Set same color limits for both U and V
+            plot.set_clim(-vmax_u, vmax_u)
+
+    # Unpack plots for easier reference
+    u_pod_orig, v_pod_orig, u_pod_recon, v_pod_recon, u_dmd_recon, v_dmd_recon = plots
 
     # Set titles
-    ax1.set_title('Original U velocity')
-    ax2.set_title('Original V velocity')
-    ax3.set_title('Reconstructed U velocity')
-    ax4.set_title('Reconstructed V velocity')
+    axes[0, 0].set_title('Original U')
+    axes[1, 0].set_title('Original V')
+    axes[0, 1].set_title('POD Reconstruction U')
+    axes[1, 1].set_title('POD Reconstruction V')
+    axes[0, 2].set_title('DMD Reconstruction U')
+    axes[1, 2].set_title('DMD Reconstruction V')
 
-    # Add colorbars
-    plt.colorbar(u_orig, ax=ax1)
-    plt.colorbar(v_orig, ax=ax2)
-    plt.colorbar(u_recon, ax=ax3)
-    plt.colorbar(v_recon, ax=ax4)
+    # Add colorbars with shared limits
+    for i, plot in enumerate(plots):
+        plt.colorbar(
+            plot, ax=axes[i//3, i % 3],
+            label=f'Velocity [-{vmax_u:.2f}, {vmax_u:.2f}]')
 
     def update(frame):
-        # Extract original U and V components
-        u_orig_frame = orig_data[:nx*ny, frame].reshape((ny, nx))
-        v_orig_frame = orig_data[nx*ny:, frame].reshape((ny, nx))
+        # Extract POD components
+        u_pod_orig_frame = pod_orig[:nx*ny, frame].reshape((ny, nx))
+        v_pod_orig_frame = pod_orig[nx*ny:, frame].reshape((ny, nx))
+        u_pod_recon_frame = pod_recon[:nx*ny, frame].reshape((ny, nx))
+        v_pod_recon_frame = pod_recon[nx*ny:, frame].reshape((ny, nx))
 
-        # Extract reconstructed U and V components
-        u_recon_frame = recon_data[:nx*ny, frame].reshape((ny, nx))
-        v_recon_frame = recon_data[nx*ny:, frame].reshape((ny, nx))
+        # Extract DMD components (take real part for visualization)
+        u_dmd_orig_frame = dmd_orig[:nx*ny, frame].reshape((ny, nx)).real
+        v_dmd_orig_frame = dmd_orig[nx*ny:, frame].reshape((ny, nx)).real
+        u_dmd_recon_frame = dmd_recon[:nx*ny, frame].reshape((ny, nx)).real
+        v_dmd_recon_frame = dmd_recon[nx*ny:, frame].reshape((ny, nx)).real
 
         # Update plots
-        u_orig.set_array(u_orig_frame.ravel())
-        v_orig.set_array(v_orig_frame.ravel())
-        u_recon.set_array(u_recon_frame.ravel())
-        v_recon.set_array(v_recon_frame.ravel())
-
-        # Update color scales
-        vmin_u = min(orig_data[:nx*ny, :].min(), recon_data[:nx*ny, :].min())
-        vmax_u = max(orig_data[:nx*ny, :].max(), recon_data[:nx*ny, :].max())
-        vmin_v = min(orig_data[nx*ny:, :].min(), recon_data[nx*ny:, :].min())
-        vmax_v = max(orig_data[nx*ny:, :].max(), recon_data[nx*ny:, :].max())
-
-        u_orig.set_clim(vmin_u, vmax_u)
-        u_recon.set_clim(vmin_u, vmax_u)
-        v_orig.set_clim(vmin_v, vmax_v)
-        v_recon.set_clim(vmin_v, vmax_v)
+        u_pod_orig.set_array(u_pod_orig_frame.ravel())
+        v_pod_orig.set_array(v_pod_orig_frame.ravel())
+        u_pod_recon.set_array(u_pod_recon_frame.ravel())
+        v_pod_recon.set_array(v_pod_recon_frame.ravel())
+        u_dmd_recon.set_array(u_dmd_recon_frame.ravel())
+        v_dmd_recon.set_array(v_dmd_recon_frame.ravel())
 
         plt.suptitle(f'Time step: {frame}')
-        return u_orig, v_orig, u_recon, v_recon
+        return plots
 
     # Create animation
     anim = FuncAnimation(fig, update, frames=n_snapshots,
@@ -91,14 +129,42 @@ def create_comparison_animation(orig_data, recon_data, nx, ny, n_snapshots, outp
 
 
 if __name__ == "__main__":
-    # Read original data
-    orig_data, nx, ny, n_snapshots = read_velocity_field(
+    # Read POD data
+    pod_orig, nx, ny, n_snapshots = read_velocity_field(
         "build/velocity_field_original.bin")
-
-    # Read reconstructed data
-    recon_data, _, _, _ = read_velocity_field(
+    pod_recon, _, _, _ = read_velocity_field(
         "build/velocity_field_reconstructed.bin")
 
+    # Read DMD data
+    dmd_orig, _, _, _ = read_complex_velocity_field(
+        "build/velocity_field_original_dmd.bin")
+    dmd_recon, _, _, _ = read_complex_velocity_field(
+        "build/velocity_field_reconstructed_dmd.bin")
+
+    # Print data statistics
+    print("POD original stats:")
+    print(f"Shape: {pod_orig.shape}")
+    print(f"Min: {pod_orig.min()}, Max: {pod_orig.max()}")
+    print("\nPOD reconstruction stats:")
+    print(f"Shape: {pod_recon.shape}")
+    print(f"Min: {pod_recon.min()}, Max: {pod_recon.max()}")
+
+    print("\nDMD original stats:")
+    print(f"Shape: {dmd_orig.shape}")
+    print(f"Real min: {dmd_orig.real.min()}, Real max: {dmd_orig.real.max()}")
+    print(f"Imag min: {dmd_orig.imag.min()}, Imag max: {dmd_orig.imag.max()}")
+    print("\nDMD reconstruction stats:")
+    print(f"Shape: {dmd_recon.shape}")
+    print(
+        f"Real min: {dmd_recon.real.min()}, Real max: {dmd_recon.real.max()}")
+    print(
+        f"Imag min: {dmd_recon.imag.min()}, Imag max: {dmd_recon.imag.max()}")
+
+    # Print first few values
+    print("\nFirst few values of DMD reconstruction:")
+    print(dmd_recon[:5, :5])
+
     # Create comparison animation
-    create_comparison_animation(orig_data, recon_data, nx, ny, n_snapshots,
+    create_comparison_animation(pod_orig, pod_recon, dmd_orig, dmd_recon,
+                                nx, ny, n_snapshots,
                                 "doc/static/pod/velocity_field_comparison.gif")

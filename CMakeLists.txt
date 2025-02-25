@@ -22,4 +22,18 @@ target_include_directories(pod PUBLIC ${EIGEN3_INCLUDE_DIR})
 
 # Create demo executable
 add_executable(pod_demo examples/pod_demo.cpp)
-target_link_libraries(pod_demo PRIVATE pod)
+target_link_libraries(pod_demo PRIVATE pod flow_utils)
+
+# Add DMD library
+add_library(dmd src/dmd.cpp)
+target_include_directories(dmd PUBLIC include)
+target_include_directories(dmd PUBLIC ${EIGEN3_INCLUDE_DIR})
+
+# Add DMD demo executable
+add_executable(dmd_demo examples/dmd_demo.cpp)
+target_link_libraries(dmd_demo PRIVATE dmd flow_utils)
+
+# Add flow utils library
+add_library(flow_utils src/flow_utils.cpp)
+target_include_directories(flow_utils PUBLIC include)
+target_include_directories(flow_utils PUBLIC ${EIGEN3_INCLUDE_DIR})
