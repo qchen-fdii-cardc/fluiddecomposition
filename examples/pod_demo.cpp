@@ -69,7 +69,7 @@ int main()
 
     // Generate test data
     Eigen::MatrixXd X = flow::generate_test_data(FlowParams::nx, FlowParams::ny,
-                                                FlowParams::n_snapshots, false);
+                                                 FlowParams::n_snapshots, true);
 
     // Create POD object and compute modes
     POD pod;
@@ -85,9 +85,9 @@ int main()
 
     // Save the original and reconstructed velocity field data
     flow::save_velocity_field(X, FlowParams::nx, FlowParams::ny,
-                            "build/velocity_field_original.bin");
+                              "build/velocity_field_original.bin");
     flow::save_velocity_field(reconstruction_matrix, FlowParams::nx, FlowParams::ny,
-                            "build/velocity_field_reconstructed.bin");
+                              "build/velocity_field_reconstructed.bin");
 
     return 0;
 }

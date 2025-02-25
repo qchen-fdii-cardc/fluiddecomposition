@@ -15,6 +15,14 @@ def read_velocity_field(filename):
         data = np.frombuffer(f.read(), dtype=np.float64)
         data = data.reshape((2*nx*ny, n_snapshots))
 
+        # Debug print
+        print(f"\nReading {filename}:")
+        print(f"Dimensions: nx={nx}, ny={ny}, snapshots={n_snapshots}")
+        print(
+            f"U range: {data[:nx*ny, :].min():.6f} to {data[:nx*ny, :].max():.6f}")
+        print(
+            f"V range: {data[nx*ny:, :].min():.6f} to {data[nx*ny:, :].max():.6f}")
+
         return data, nx, ny, n_snapshots
 
 
@@ -25,8 +33,8 @@ def read_complex_velocity_field(filename):
         ny = struct.unpack('i', f.read(4))[0]
         n_snapshots = struct.unpack('i', f.read(4))[0]
 
-        # Calculate total size for real and imaginary parts
-        points_per_snapshot = 2 * nx * ny  # 2 for u and v components
+        # Calculate total size
+        points_per_snapshot = 2 * nx * ny
         total_elements = points_per_snapshot * n_snapshots
 
         # Read data
@@ -37,6 +45,14 @@ def read_complex_velocity_field(filename):
             (points_per_snapshot, n_snapshots))
         imag_part = data[total_elements:].reshape(
             (points_per_snapshot, n_snapshots))
+
+        # Debug print
+        print(f"\nReading {filename}:")
+        print(f"Dimensions: nx={nx}, ny={ny}, snapshots={n_snapshots}")
+        print(
+            f"U range (real): {real_part[:nx*ny, :].min():.6f} to {real_part[:nx*ny, :].max():.6f}")
+        print(
+            f"V range (real): {real_part[nx*ny:, :].min():.6f} to {real_part[nx*ny:, :].max():.6f}")
 
         # Combine into complex data
         complex_data = real_part + 1j * imag_part
@@ -63,20 +79,23 @@ def create_comparison_animation(pod_orig, pod_recon, dmd_orig, dmd_recon,
                  abs(dmd_recon[:nx*ny, :].real.max()),
                  abs(dmd_recon[:nx*ny, :].real.min()))
 
-    # For V component - use same scale as U for consistency
-    vmax_v = vmax_u  # Use same scale for both components
+    # For V component
+    vmax_v = max(abs(pod_orig[nx*ny:, :].max()),
+                 abs(pod_orig[nx*ny:, :].min()),
+                 abs(pod_recon[nx*ny:, :].max()),
+                 abs(pod_recon[nx*ny:, :].min()),
+                 abs(dmd_recon[nx*ny:, :].real.max()),
+                 abs(dmd_recon[nx*ny:, :].real.min()))
 
     # Initialize plots with consistent colormap and scale
     plots = []
     for i in range(2):  # rows: u and v components
         for j in range(3):  # columns: original, POD, DMD
             plot = axes[i, j].pcolormesh(X, Y, np.zeros((ny, nx)),
-                                         cmap='RdBu_r', shading='auto')
+                                         cmap='turbo', shading='auto')
             plots.append(plot)
             axes[i, j].set_aspect('equal')
             axes[i, j].axis('off')
-            # Set same color limits for both U and V
-            plot.set_clim(-vmax_u, vmax_u)
 
     # Unpack plots for easier reference
     u_pod_orig, v_pod_orig, u_pod_recon, v_pod_recon, u_dmd_recon, v_dmd_recon = plots
@@ -89,11 +108,24 @@ def create_comparison_animation(pod_orig, pod_recon, dmd_orig, dmd_recon,
     axes[0, 2].set_title('DMD Reconstruction U')
     axes[1, 2].set_title('DMD Reconstruction V')
 
-    # Add colorbars with shared limits
+    # Set color limits for each plot
+    u_pod_orig.set_clim(-vmax_u, vmax_u)
+    u_pod_recon.set_clim(-vmax_u, vmax_u)
+    u_dmd_recon.set_clim(-vmax_u, vmax_u)
+    v_pod_orig.set_clim(-vmax_v, vmax_v)
+    v_pod_recon.set_clim(-vmax_v, vmax_v)
+    v_dmd_recon.set_clim(-vmax_v, vmax_v)
+
+    # Add colorbars with separate limits for U and V components
     for i, plot in enumerate(plots):
-        plt.colorbar(
-            plot, ax=axes[i//3, i % 3],
-            label=f'Velocity [-{vmax_u:.2f}, {vmax_u:.2f}]')
+        if i < 3:  # U components
+            plt.colorbar(
+                plot, ax=axes[i//3, i % 3],
+                label=f'U Velocity [-{vmax_u:.2f}, {vmax_u:.2f}]')
+        else:  # V components
+            plt.colorbar(
+                plot, ax=axes[i//3, i % 3],
+                label=f'V Velocity [-{vmax_v:.2f}, {vmax_v:.2f}]')
 
     def update(frame):
         # Extract POD components

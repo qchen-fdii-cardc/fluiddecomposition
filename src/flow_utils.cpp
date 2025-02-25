@@ -1,6 +1,7 @@
 #include "flow_utils.hpp"
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
 namespace flow {
 
@@ -47,11 +48,21 @@ void save_velocity_field(const Eigen::MatrixXd& X, int nx, int ny,
         throw std::runtime_error("Could not open file: " + filename);
     }
 
+    // Debug print
+    std::cout << "Saving velocity field:\n";
+    std::cout << "Dimensions: nx=" << nx << ", ny=" << ny << ", snapshots=" << X.cols() << "\n";
+    std::cout << "U range: " << X.topRows(nx*ny).minCoeff() << " to " << X.topRows(nx*ny).maxCoeff() << "\n";
+    std::cout << "V range: " << X.bottomRows(nx*ny).minCoeff() << " to " << X.bottomRows(nx*ny).maxCoeff() << "\n";
+
+    // Save dimensions
     file.write(reinterpret_cast<const char*>(&nx), sizeof(nx));
     file.write(reinterpret_cast<const char*>(&ny), sizeof(ny));
     
+    // Save number of snapshots
     int n_snapshots = X.cols();
     file.write(reinterpret_cast<const char*>(&n_snapshots), sizeof(n_snapshots));
+    
+    // Save data
     file.write(reinterpret_cast<const char*>(X.data()), X.size() * sizeof(double));
     
     file.close();
@@ -66,19 +77,27 @@ void save_complex_velocity_field(const Eigen::MatrixXcd& X, int nx, int ny,
         throw std::runtime_error("Could not open file: " + filename);
     }
 
+    // Debug print
+    std::cout << "Saving complex velocity field:\n";
+    std::cout << "Dimensions: nx=" << nx << ", ny=" << ny << ", snapshots=" << X.cols() << "\n";
+    std::cout << "U range (real): " << X.topRows(nx*ny).real().minCoeff() << " to " << X.topRows(nx*ny).real().maxCoeff() << "\n";
+    std::cout << "V range (real): " << X.bottomRows(nx*ny).real().minCoeff() << " to " << X.bottomRows(nx*ny).real().maxCoeff() << "\n";
+
+    // Save dimensions
     file.write(reinterpret_cast<const char*>(&nx), sizeof(nx));
     file.write(reinterpret_cast<const char*>(&ny), sizeof(ny));
     
+    // Save number of snapshots
     int n_snapshots = X.cols();
     file.write(reinterpret_cast<const char*>(&n_snapshots), sizeof(n_snapshots));
     
+    // Save real part
     Eigen::MatrixXd real_part = X.real();
-    Eigen::MatrixXd imag_part = X.imag();
+    file.write(reinterpret_cast<const char*>(real_part.data()), real_part.size() * sizeof(double));
     
-    file.write(reinterpret_cast<const char*>(real_part.data()),
-               real_part.size() * sizeof(double));
-    file.write(reinterpret_cast<const char*>(imag_part.data()),
-               imag_part.size() * sizeof(double));
+    // Save imaginary part
+    Eigen::MatrixXd imag_part = X.imag();
+    file.write(reinterpret_cast<const char*>(imag_part.data()), imag_part.size() * sizeof(double));
     
     file.close();
 }
