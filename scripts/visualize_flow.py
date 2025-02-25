@@ -92,7 +92,7 @@ def create_comparison_animation(pod_orig, pod_recon, dmd_orig, dmd_recon,
     for i in range(2):  # rows: u and v components
         for j in range(3):  # columns: original, POD, DMD
             plot = axes[i, j].pcolormesh(X, Y, np.zeros((ny, nx)),
-                                         cmap='turbo', shading='auto')
+                                         cmap='RdBu', shading='auto')
             plots.append(plot)
             axes[i, j].set_aspect('equal')
             axes[i, j].axis('off')
