@@ -1,0 +1,24 @@
+baseURL = 'https://localhost:1313'
+languageCode = 'en-us'
+title = 'Decompositon-based Models for Fluid Dynamics'
+theme = "hugo-book"
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true  # Enables raw HTML in markdown
+
+  [markup.goldmark.parser]
+    [markup.goldmark.parser.attribute]
+      block = true
+      title = true
+  [markup.goldmark.extensions]
+    [markup.goldmark.extensions.passthrough]
+      enable = true
+      [markup.goldmark.extensions.passthrough.delimiters]
+        block = [['\[', '\]'], ['$$', '$$']]
+        inline = [['\(', '\)'], ['$', '$']]
+[params]
+  math = true
+  [params.book]
+  
