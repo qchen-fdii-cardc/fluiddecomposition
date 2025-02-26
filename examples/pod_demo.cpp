@@ -89,5 +89,8 @@ int main()
     flow::save_velocity_field(reconstruction_matrix, FlowParams::nx, FlowParams::ny,
                               "build/velocity_field_reconstructed.bin");
 
+    // Add after computing POD
+    pod.exportResults("build/pod_results");
+
     return 0;
 }

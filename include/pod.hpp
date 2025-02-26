@@ -1,6 +1,8 @@
 #pragma once
 #include <Eigen/Dense>
 #include <vector>
+#include <string>
+#include <fstream>
 
 class POD
 {
@@ -30,9 +32,45 @@ public:
     // Get temporal modes (V matrix)
     const Eigen::MatrixXd &temporalModes() const { return temporal_modes_; }
 
+    // Export results to CSV files
+    void exportResults(const std::string& prefix) const {
+        // Export modes
+        exportMatrix(modes_, prefix + "_modes.csv");
+        // Export singular values
+        exportVector(singular_values_, prefix + "_singular_values.csv");
+        // Export temporal coefficients
+        exportMatrix(getTemporalCoefficients(), prefix + "_coefficients.csv");
+    }
+
 private:
     Eigen::MatrixXd modes_;           // POD spatial modes (U)
     Eigen::VectorXd singular_values_; // Singular values (Σ)
     Eigen::MatrixXd temporal_modes_;  // Temporal modes (V)
     int rank_;                        // Rank of approximation
+
+    // Helper function to export matrix
+    static void exportMatrix(const Eigen::MatrixXd& mat, const std::string& filename) {
+        std::ofstream file(filename);
+        if (file.is_open()) {
+            file << mat.format(Eigen::IOFormat(
+                Eigen::FullPrecision,
+                Eigen::DontAlignCols,
+                ", ",
+                "\n"
+            ));
+        }
+    }
+
+    // Helper function to export vector
+    static void exportVector(const Eigen::VectorXd& vec, const std::string& filename) {
+        std::ofstream file(filename);
+        if (file.is_open()) {
+            file << vec.format(Eigen::IOFormat(
+                Eigen::FullPrecision,
+                Eigen::DontAlignCols,
+                ", ",
+                "\n"
+            ));
+        }
+    }
 };

@@ -9,7 +9,10 @@
 
 ## 代码和运行
 
-代码运行
+代码运行，代码需要使用cmake编译，
+
+- 在Windows上，需要安装MSVC编译器，并且Eigen3的头文件位置需要在`CMakeLists.txt`中指定。
+- 在Linux上，需要安装g++编译器，并且需要安装Eigen3库（`libeigen3-dev`）。
 
 ```bash
 git clone https://github.com/qchen-fdii-cardc/fluiddecomposition.git

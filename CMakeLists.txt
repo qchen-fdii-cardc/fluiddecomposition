@@ -12,8 +12,12 @@ if(MSVC)
 endif()
 
 # Set Eigen3 path
-set(EIGEN3_INCLUDE_DIR "D:/sources/eigen-3.4.0")
-include_directories(${EIGEN3_INCLUDE_DIR})
+if (MSVC)
+    set(EIGEN3_INCLUDE_DIR "D:/sources/eigen-3.4.0")
+    include_directories(${EIGEN3_INCLUDE_DIR})
+else()
+    find_package(Eigen3 REQUIRED)
+endif()
 
 # Create POD library
 add_library(pod src/pod.cpp)

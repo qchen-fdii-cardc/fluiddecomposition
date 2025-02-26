@@ -51,5 +51,8 @@ int main()
     save_complex_velocity_field(reconstruction, FlowParams::nx, FlowParams::ny,
                                 "build/velocity_field_reconstructed_dmd.bin");
 
+    // Export results to CSV files
+    dmd.exportResults("build/dmd_results");
+
     return 0;
 }
