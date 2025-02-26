@@ -14,7 +14,8 @@ weight: 3
 ## 基本概念
 
 对于POD和DMD都涉及到$\tau$的选择问题。
-这个参数确定了分解后的模态数量。
+这个参数确定了分解后的模态数量和重构的精度。
+当然，分解的模态还可以用于分析流动的物理特性，请参考[DMD的物理意义](https://www.windtunnel.cn/fluiddecomposition/docs/dmd/)中对$D = ABC$的介绍。
 
 ## POD的阶次选择
 对于POD而言，阶次的选择相对直观。
@@ -45,7 +46,7 @@ $\sigma_i$ 表示第$i$个特征值，
 但是考虑到增益$\mathbf{b}$并没有排序，这里的选择就变得复杂了。如果我们把$b_i$和$\mu_i$画在3D空间中，
 就能得到完整的时间域的系统行为（综合了时间模态和增益）。
 
-![DMD的阶次选择](/fluiddecomposition/dmd/dmd_spectrum.png)
+![DMD的阶次选择](/fluiddecomposition/pod/dmd_spectrum.png)
 
 例如，对于我们之前使用的虚假流场，
 有两个模态是衰减的，对应的增益为22左右，
